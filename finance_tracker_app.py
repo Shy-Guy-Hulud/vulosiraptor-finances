@@ -68,7 +68,7 @@ def get_dropdown_options():
 
 main_options, sub_options, pay_options = get_dropdown_options()
 
-st.title("💰 Vulosiraptor $$$")
+st.title("💰 Vulosiraptor")
 
 # --- PASSWORD PROTECTION ---
 def check_password():
@@ -165,7 +165,7 @@ elif st.session_state.step == 4:
 
 # --- BUDGET DASHBOARD ---
 st.divider()
-with st.expander("📊 Monthly Budget Status", expanded=True):
+with st.expander("📊 Monthly Budget Status", expanded=False):
     try:
         # Pull 3 rows (A6:D8) to get General Spending + 2 more categories
         budget_data = budget_sheet.get("A6:D8")
@@ -195,6 +195,11 @@ with st.expander("📊 Monthly Budget Status", expanded=True):
             st.caption(f"{int(prog * 100)}% of monthly limit used")
             st.divider()
 
+        # --- DIRECT LINK ---
+        spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit"
+        st.caption(f"Access the spreadsheet directly [by clicking here]({spreadsheet_url})")
+
     except Exception as e:
         st.write("Click to refresh budget stats...")
         # st.error(f"Error: {e}") # Uncomment to debug if it stays blank
+
