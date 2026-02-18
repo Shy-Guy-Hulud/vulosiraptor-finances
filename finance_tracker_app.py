@@ -160,6 +160,9 @@ elif st.session_state.step == 4:
                 value_input_option="USER_ENTERED"
             )
 
+            #sorty by column G which is the date
+            entry_sheet.sort((7, 'asc'))
+
             st.success(f"Logged ${final_amt:,.2f} to row {next_row}!")
             restart()
 
