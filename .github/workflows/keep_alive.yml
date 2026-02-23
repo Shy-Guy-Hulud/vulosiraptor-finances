@@ -1,0 +1,28 @@
+name: Streamlit Keep Alive
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update timestamp
+        run: echo $(date) > heartbeat.txt
+
+      - name: Keep-Alive Commit
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add heartbeat.txt
+          git commit --amend -m "Heartbeat: Keep Streamlit App Awake" || git commit -m "Heartbeat: Keep Streamlit App Awake"
+          git push --force
