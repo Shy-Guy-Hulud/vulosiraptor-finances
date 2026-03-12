@@ -52,21 +52,43 @@ SHEET_ID = "1EKmCiJEowstVOr_lleOHOcHgjOHfD8WtMX-Y-28KVkY"
 spreadsheet = client.open_by_key(SHEET_ID)
 entry_sheet = spreadsheet.get_worksheet(0)
 budget_sheet = spreadsheet.get_worksheet(1)
-
+category_sheet = spreadsheet.get_worksheet(4)
 
 # --- HELPER: GET DROPDOWNS ---
 # We'll cache this so it doesn't slow down the app every time you click a button
 @st.cache_data(ttl=600)
 def get_dropdown_options():
-    # Fetch all data from the first tab to find unique categories
-    data = entry_sheet.get_all_records()
-    main_cats = sorted(list(set(row['Main Category'] for row in data if row['Main Category'])))
-    sub_cats = sorted(list(set(row['Sub-Category'] for row in data if row['Sub-Category'])))
-    payments = sorted(list(set(row['Payment Method'] for row in data if row['Payment Method'])))
-    return main_cats, sub_cats, payments
+    all_values = category_sheet.get_all_values()
+
+    category_map = {}
+    payment_list = []
+
+    for row in all_values:
+        # 1. Handle Categories (Columns A & B)
+        if len(row) >= 2:
+            main = row[0].strip()
+            sub = row[1].strip()
+            if main and sub:
+                if main not in category_map:
+                    category_map[main] = []
+                if sub not in category_map[main]:
+                    category_map[main].append(sub)
+
+        # 2. Handle Payment Methods (Column C)
+        if len(row) >= 3:
+            pay = row[2].strip()
+            if pay:
+                payment_list.append(pay)
+
+    # Remove duplicates from payment list while preserving order
+    pay_options = list(dict.fromkeys(payment_list))
+
+    return category_map, pay_options
 
 
-main_options, sub_options, pay_options = get_dropdown_options()
+# Unpack for use in the app
+category_map, pay_options = get_dropdown_options()
+main_options = list(category_map.keys())
 
 st.title("💰 Vulosiraptor")
 
@@ -123,9 +145,16 @@ elif st.session_state.step == 3:
 
 # --- STEP 4: FULL DETAILS ---
 elif st.session_state.step == 4:
+    st.subheader("Finalize Transaction")
+
+    # Place Main Category outside the form to trigger the Sub-Category refresh
+    m_cat = st.selectbox("Main Category", options=main_options)
+
+    # Filter sub-options based on the selection above
+    specific_sub_options = category_map.get(m_cat, [])
+
     with st.form("step4_form"):
-        m_cat = st.selectbox("Main Category", options=main_options)
-        s_cat = st.selectbox("Sub-Category", options=sub_options)
+        s_cat = st.selectbox("Sub-Category", options=specific_sub_options)
         pay = st.selectbox("Payment Method", options=pay_options)
         dt_obj = st.date_input("Date", value=date.today())
 
@@ -135,35 +164,27 @@ elif st.session_state.step == 4:
             final_amt = float(st.session_state.form_data['amount'])
             formatted_date = dt_obj.strftime("%m/%d/%y")
 
-            # Define the row data once
             new_row = [
-                st.session_state.form_data['what'],  # Column A
-                st.session_state.form_data['where'],  # Column B
-                m_cat,  # Column C
-                s_cat,  # Column D
-                pay,  # Column E
-                final_amt,  # Column F
-                formatted_date  # Column G
+                st.session_state.form_data['what'],
+                st.session_state.form_data['where'],
+                m_cat,
+                s_cat,
+                pay,
+                final_amt,
+                formatted_date
             ]
 
-            # --- SMART APPEND LOGIC ---
-            # 1. Get all values in Column A to find the last entry
+            # Standard append logic
             col_a = entry_sheet.col_values(1)
-
-            # 2. DEFINE next_row (This was the missing piece!)
             next_row = len(col_a) + 1
-
-            # 3. Update the specific range for that row
             entry_sheet.update(
                 range_name=f"A{next_row}:G{next_row}",
                 values=[new_row],
                 value_input_option="USER_ENTERED"
             )
 
-            #sorty by column G which is the date
             entry_sheet.sort((7, 'asc'))
-
-            st.success(f"Logged ${final_amt:,.2f} to row {next_row}!")
+            st.success(f"Logged ${final_amt:,.2f}!")
             restart()
 
 # --- BUDGET DASHBOARD ---
