@@ -48,7 +48,7 @@ scope = ["https://www.googleapis.com/auth/spreadsheets"]
 creds = Credentials.from_service_account_info(st.secrets["google_credentials"], scopes=scope)
 client = gspread.authorize(creds)
 
-SHEET_ID = "1EKmCiJEowstVOr_lleOHOcHgjOHfD8WtMX-Y-28KVkY"
+SHEET_ID = "1MDbA0ITAOkNl4mYsYibmwt2BvxS62JR8lFabCaY9Kvo"
 spreadsheet = client.open_by_key(SHEET_ID)
 entry_sheet = spreadsheet.get_worksheet(0)
 budget_sheet = spreadsheet.get_worksheet(1)
